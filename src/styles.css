@@ -1,4 +1,4 @@
-:root {
+ :root {
   font-family: 'Segoe UI', Arial, sans-serif;
   color: #edf3ff;
   background: #020b14;
@@ -887,6 +887,202 @@ a {
   gap: 8px;
 }
 
+.contacts-screen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5,17,27,0.72), rgba(3,12,20,0.9));
+  padding: 16px 14px 18px;
+  z-index: 24;
+}
+
+.contacts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.contacts-title {
+  flex: 1;
+  text-align: center;
+  font-weight: 900;
+  color: #f5c34d;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 18px;
+}
+
+.close-x {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: white;
+  font-size: 24px;
+}
+
+.contacts-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(16,28,42,0.8);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.contact-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 900;
+  color: #0d1d2d;
+  background: #f5c34d;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+.contact-badge[data-status='offline'] {
+  background: #c9d4eb;
+}
+
+.contact-name-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.contact-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.contact-status {
+  font-size: 12px;
+  color: #d7e6ff;
+  opacity: 0.8;
+  text-transform: lowercase;
+}
+
+.contacts-glow {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 12px;
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(77,214,255,0), rgba(77,214,255,0.95), rgba(77,214,255,0));
+  box-shadow: 0 0 18px rgba(77,214,255,0.9);
+}
+
+.chat-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 12px 12px;
+  background: linear-gradient(180deg, rgba(3,12,20,0.88), rgba(6,18,29,0.95));
+  z-index: 24;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.chat-user {
+  flex: 1;
+  text-align: center;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #f5c34d;
+  text-transform: uppercase;
+}
+
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  flex: 1;
+  overflow: auto;
+  padding: 8px 4px;
+}
+
+.bubble {
+  max-width: 82%;
+  padding: 10px 12px 8px;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bubble.other {
+  align-self: flex-start;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.bubble.me {
+  align-self: flex-end;
+  background: rgba(245,195,77,0.18);
+  border: 1px solid rgba(245,195,77,0.4);
+}
+
+.bubble-text {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.bubble-time {
+  font-size: 10px;
+  color: rgba(255,255,255,0.75);
+  align-self: flex-end;
+}
+
+.chat-input-area {
+  display: grid;
+  grid-template-columns: 1fr 82px;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.chat-input-area input {
+  width: 100%;
+  min-height: 42px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: white;
+  padding: 0 12px;
+  outline: none;
+}
+
+.chat-input-area button {
+  min-height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f5c34d, #f7d974);
+  color: #0d1d2d;
+  font-weight: 900;
+}
+
 @keyframes spinGlobe {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -926,4 +1122,14 @@ a {
 @keyframes showTitle {
   0% { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 420px) {
+  .search-row {
+    grid-template-columns: 1fr;
+  }
+
+  .palette {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }

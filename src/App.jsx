@@ -19,11 +19,35 @@ const colors = [
   { name: 'azul', value: '#5095ff' },
 ];
 
+const initialContacts = [
+  { id: 1, name: 'Isabelle Lima', status: 'online', initials: 'I' },
+  { id: 2, name: 'Taciana Brima', status: 'offline', initials: 'T' },
+  { id: 3, name: 'Verdene Almeida', status: 'online', initials: 'V' },
+  { id: 4, name: 'Elenice Freitas', status: 'offline', initials: 'E' },
+  { id: 5, name: 'Daniel Araujo', status: 'online', initials: 'D' },
+  { id: 6, name: 'Diego Souza Gomes Da Silva', status: 'offline', initials: 'D' },
+  { id: 7, name: 'Diário de Embarque', status: 'online', initials: 'D' },
+  { id: 8, name: 'Gessélia Torres', status: 'offline', initials: 'G' },
+  { id: 9, name: 'doni_pain', status: 'offline', initials: 'D' },
+  { id: 10, name: 'Lustavo Ian', status: 'offline', initials: 'L' },
+  { id: 11, name: 'João Victor', status: 'online', initials: 'J' },
+  { id: 12, name: 'Maiara Núncia', status: 'offline', initials: 'M' },
+];
+
+const initialMessages = [
+  { id: 1, from: 'other', text: 'Olá, tudo certo para os voos de hoje?', time: '08:15' },
+  { id: 2, from: 'me', text: 'Tudo bem, o voo 3254 já está com a documentação pronta.', time: '08:16' },
+  { id: 3, from: 'other', text: 'Ótimo. Me avise se aparecer algum atraso.', time: '08:17' },
+  { id: 4, from: 'me', text: 'Claro, vou te atualizar em tempo real.', time: '08:18' },
+];
+
 export default function App() {
   const [screen, setScreen] = useState('login');
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState('dark');
   const [selectedColor, setSelectedColor] = useState('amarelo');
+  const [chatText, setChatText] = useState('');
+  const [messages, setMessages] = useState(initialMessages);
 
   const handleLogin = () => {
     setScreen('transition');
@@ -35,6 +59,18 @@ export default function App() {
   }, [screen]);
 
   const selectedColorValue = colors.find((c) => c.name === selectedColor)?.value || '#f5c34d';
+
+  const sendMessage = () => {
+    if (!chatText.trim()) return;
+    const nextMessage = {
+      id: Date.now(),
+      from: 'me',
+      text: chatText.trim(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setMessages((current) => [...current, nextMessage]);
+    setChatText('');
+  };
 
   return (
     <div className={`app-shell ${selectedTheme === 'dark' ? 'dark' : 'light'}`}>
@@ -112,8 +148,8 @@ export default function App() {
               </div>
 
               <div className="header-actions">
-                <button className="icon-btn" type="button">⚙</button>
-                <button className="chat-btn" type="button">💬 Chat</button>
+                <button className="icon-btn" type="button" onClick={() => setScreen('personalize')}>⚙</button>
+                <button className="chat-btn" type="button" onClick={() => setScreen('chat')}>💬 Chat</button>
                 <button className="chat-btn" type="button">↩ Sair</button>
               </div>
             </div>
@@ -210,9 +246,9 @@ export default function App() {
             {menuOpen && (
               <div className="floating-menu">
                 <button type="button" onClick={() => setScreen('personalize')}>Personalizar</button>
+                <button type="button" onClick={() => setScreen('contacts')}>Contatos</button>
+                <button type="button" onClick={() => setScreen('chat')}>Chat</button>
                 <button type="button">Admin</button>
-                <button type="button">Chat</button>
-                <button type="button">Contatos</button>
                 <button type="button" onClick={() => setMenuOpen(false)}>Fechar</button>
               </div>
             )}
@@ -290,6 +326,61 @@ export default function App() {
             </div>
 
             <button type="button" className="restore-btn">↻ Restaurar tema padrão</button>
+          </div>
+        )}
+
+        {screen === 'contacts' && (
+          <div className="contacts-screen">
+            <div className="contacts-header">
+              <button type="button" className="back-btn" onClick={() => setScreen('dashboard')}>← Diário</button>
+              <div className="contacts-title">Contatos</div>
+              <button type="button" className="close-x">×</button>
+            </div>
+
+            <div className="contacts-list">
+              {initialContacts.map((contact) => (
+                <div key={contact.id} className="contact-item">
+                  <div className="contact-badge" data-status={contact.status}>{contact.initials}</div>
+                  <div className="contact-name-wrap">
+                    <div className="contact-name">{contact.name}</div>
+                    <div className="contact-status">{contact.status === 'online' ? 'online' : 'offline'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="contacts-glow" />
+          </div>
+        )}
+
+        {screen === 'chat' && (
+          <div className="chat-screen">
+            <div className="chat-header">
+              <button type="button" className="back-btn" onClick={() => setScreen('dashboard')}>← Voltar</button>
+              <div className="chat-user">New Embarque</div>
+            </div>
+
+            <div className="chat-messages">
+              {messages.map((message) => (
+                <div key={message.id} className={`bubble ${message.from === 'me' ? 'me' : 'other'}`}>
+                  <div className="bubble-text">{message.text}</div>
+                  <div className="bubble-time">{message.time}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="chat-input-area">
+              <input
+                type="text"
+                placeholder="Mensagem..."
+                value={chatText}
+                onChange={(e) => setChatText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') sendMessage();
+                }}
+              />
+              <button type="button" onClick={sendMessage}>Enviar</button>
+            </div>
           </div>
         )}
       </div>

@@ -1,0 +1,11 @@
+/* Final interaction and accessibility polish */
+button, input, textarea { transition: border-color .2s ease, background .2s ease, box-shadow .2s ease, transform .2s ease, filter .2s ease; }
+button:hover { filter: brightness(1.08); transform: translateY(-1px); }
+button:active { transform: translateY(0); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+input:focus, textarea:focus { outline: 2px solid rgba(242,195,86,.28); outline-offset: 1px; border-color: var(--yellow) !important; box-shadow: 0 0 0 3px rgba(242,195,86,.16); }
+.login-error { margin: -3px 0 10px; color: #ff8d98; font-size: 12px; }
+.status-dot.pending { background: var(--red); box-shadow: 0 0 0 6px rgba(233,79,99,.14); }
+.thumbs { display: flex; gap: 8px; margin-top: 14px; overflow-x: auto; }
+.thumbs img { width: 58px; height: 58px; flex: 0 0 auto; border-radius: 9px; object-fit: cover; }
+@media (min-width: 761px) { .app-shell { width: min(100%, 1050px); } .field-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .field-grid.two-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

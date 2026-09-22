@@ -57,6 +57,17 @@ const normalizeDay = (day = {}, dateKey) => ({
 
 const themeDefaults = { mode: 'auto', wallpaper: '#0d1420' };
 
+const getWallpaperStyle = (wallpaper) => {
+  if (!wallpaper) return { background: `linear-gradient(180deg, rgba(10,18,29,0.68), rgba(8,16,27,0.9)), ${themeDefaults.wallpaper}` };
+
+  const isUrl = /^https?:\/\//i.test(wallpaper) || wallpaper.startsWith('data:');
+  return {
+    background: isUrl
+      ? `linear-gradient(180deg, rgba(10,18,29,0.68), rgba(8,16,27,0.9)), url(${wallpaper}) center/cover no-repeat`
+      : `linear-gradient(180deg, rgba(10,18,29,0.68), rgba(8,16,27,0.9)), ${wallpaper}`
+  };
+};
+
 export default function App() {
   const [screen, setScreen] = useState('login');
   const [email, setEmail] = useState('usuario@embarque.com');
@@ -120,6 +131,7 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
+
     const payload = {
       ...normalizeDay(days[selectedDate], selectedDate),
       date: selectedDate,
@@ -151,8 +163,9 @@ export default function App() {
         const profile = await getUserProfile();
         setUser(profile);
         const remote = await getDays();
-        setDays(remote || {});
-        writeLocalDays(remote || {});
+        const merged = { ...readLocalDays(), ...(remote || {}) };
+        setDays(merged);
+        writeLocalDays(merged);
         setScreen('dashboard');
       } catch {
         localStorage.removeItem(TOKEN_KEY);
@@ -179,6 +192,7 @@ export default function App() {
       setError('');
       const result = await loginUser(email, password);
       setUser(result.user);
+      localStorage.setItem(USER_KEY, JSON.stringify(result.user));
 
       const remoteDays = await getDays();
       const merged = { ...readLocalDays(), ...(remoteDays || {}) };
@@ -262,7 +276,8 @@ export default function App() {
     try {
       for (const file of files) {
         const uploaded = await uploadImage(file);
-        updateFlight(selectedFlight.id, 'photos', [...(selectedFlight.photos || []), { name: uploaded.name, url: uploaded.url }]);
+        const photos = [...(selectedFlight.photos || []), { name: uploaded.name, url: uploaded.url }];
+        updateFlight(selectedFlight.id, 'photos', photos);
       }
       notify('Foto(s) enviadas');
     } catch (err) {
@@ -317,6 +332,8 @@ export default function App() {
   };
 
   const dayKeys = useMemo(() => Object.keys(days).sort((a, b) => b.localeCompare(a)), [days]);
+
+  const dashboardStyle = getWallpaperStyle(theme.wallpaper);
 
   if (screen === 'login') {
     return (
@@ -441,7 +458,7 @@ export default function App() {
   }
 
   return (
-    <main className="dashboard-screen" style={{ backgroundImage: `linear-gradient(180deg, rgba(10,18,29,0.68), rgba(8,16,27,0.9)), url(${theme.wallpaper || BRAND_IMAGE})` }}>
+    <main className="dashboard-screen" style={dashboardStyle}>
       <header className="topbar">
         <div className="brand-block">
           <div className="brand-mark">✈</div>

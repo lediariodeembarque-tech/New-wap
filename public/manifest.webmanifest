@@ -1,0 +1,13 @@
+{
+  "name": "Diário de Embarque",
+  "short_name": "Embarque",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#091a2a",
+  "theme_color": "#f2c356",
+  "description": "Registro diário de voos para agentes de aeroporto.",
+  "icons": [
+    { "src": "/1790037724898.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/1790037724898.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

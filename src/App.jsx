@@ -1,18 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { jsPDF } from 'jspdf';
-import { getDays, getUserProfile, loginUser, saveDay } from './api';
+import { getDays, getUserProfile, loginUser, saveDay, uploadImage } from './api';
 
-const STORAGE_KEY = 'new-wap-days-cache';
+const STORAGE_KEY = 'embarque:dias';
 const USER_KEY = 'new-wap-user';
+const THEME_KEY = 'new-wap-theme';
 const TOKEN_KEY = 'new-wap-token';
-const DATE_KEY = 'new-wap-selected-date';
-const BRAND_IMAGE = 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=85';
-
-const seedFlights = [
-  { id: 1, number: '3416', destination: 'POA', time: '07:35', agent: 'Renato', gate: '217', control: '01', note: '', photos: [] },
-  { id: 2, number: '3592', destination: 'IOS', time: '10:25', agent: 'Renato', gate: '222', control: '02', note: '', photos: [] },
-  { id: 3, number: '3200', destination: 'IGU', time: '12:10', agent: 'Leandro', gate: '208', control: '03', note: '', photos: [] },
-];
+const BRAND_IMAGE = 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80';
 
 const defaultFlight = (id) => ({
   id,
@@ -23,18 +17,24 @@ const defaultFlight = (id) => ({
   gate: '',
   control: String(id).padStart(2, '0'),
   note: '',
-  photos: [],
+  photos: []
 });
 
-const normalizeDay = (raw = {}, dateKey = new Date().toISOString().slice(0, 10)) => ({
-  date: raw.date || dateKey,
-  flights: Array.isArray(raw.flights) && raw.flights.length ? raw.flights : seedFlights,
-  note: raw.note || '',
-  synced: raw.synced !== false,
-  updatedAt: raw.updatedAt || new Date().toISOString(),
+const seedFlights = [
+  { ...defaultFlight(1), number: '3416', destination: 'POA', time: '07:35', agent: 'Renato', gate: '217', note: 'Planilha: 07:35 · POA · Portão 217' },
+  { ...defaultFlight(2), number: '3592', destination: 'IOS', time: '10:25', agent: 'Renato', gate: '222', note: 'Planilha: 10:25 · IOS · Portão 222' },
+  { ...defaultFlight(3), number: '3200', destination: 'IGU', time: '12:10', agent: 'Leandro', gate: '208', note: 'Planilha: 12:10 · IGU · Portão 208' }
+];
+
+const defaultDay = (date = new Date().toISOString().slice(0, 10)) => ({
+  date,
+  flights: seedFlights,
+  note: '',
+  synced: true,
+  updatedAt: new Date().toISOString()
 });
 
-const readDayCache = () => {
+const readLocalDays = () => {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
     return raw && typeof raw === 'object' ? raw : {};
@@ -43,9 +43,19 @@ const readDayCache = () => {
   }
 };
 
-const writeDayCache = (days) => {
+const writeLocalDays = (days) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(days));
 };
+
+const normalizeDay = (day = {}, dateKey) => ({
+  date: day.date || dateKey || new Date().toISOString().slice(0, 10),
+  flights: Array.isArray(day.flights) && day.flights.length ? day.flights : seedFlights,
+  note: day.note || '',
+  synced: day.synced !== false,
+  updatedAt: day.updatedAt || new Date().toISOString()
+});
+
+const themeDefaults = { mode: 'auto', wallpaper: '#0d1420' };
 
 export default function App() {
   const [screen, setScreen] = useState('login');
@@ -56,54 +66,81 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(() => {
     try {
-      const value = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
-      return value || null;
+      return JSON.parse(localStorage.getItem(USER_KEY) || 'null');
     } catch {
       return null;
     }
   });
-  const [days, setDays] = useState(() => readDayCache());
-  const [selectedDate, setSelectedDate] = useState(() => localStorage.getItem(DATE_KEY) || new Date().toISOString().slice(0, 10));
+  const [days, setDays] = useState(() => readLocalDays());
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [selectedId, setSelectedId] = useState(1);
   const [query, setQuery] = useState('');
   const [dayNote, setDayNote] = useState(() => {
-    const cached = readDayCache();
-    const today = new Date().toISOString().slice(0, 10);
-    return cached?.[today]?.note || '';
+    const current = readLocalDays();
+    return current[new Date().toISOString().slice(0, 10)]?.note || '';
   });
+  const [theme, setTheme] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(THEME_KEY) || 'null') || themeDefaults;
+    } catch {
+      return themeDefaults;
+    }
+  });
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const selectedDay = useMemo(
-    () => normalizeDay(days[selectedDate], selectedDate),
-    [days, selectedDate]
+  const todayData = useMemo(() => normalizeDay(days[selectedDate], selectedDate), [days, selectedDate]);
+  const selectedFlight = useMemo(
+    () => todayData.flights.find((flight) => flight.id === selectedId) || todayData.flights[0] || defaultFlight(Date.now()),
+    [selectedId, todayData.flights]
   );
 
-  const selected = useMemo(
-    () => selectedDay.flights.find((flight) => flight.id === selectedId) || selectedDay.flights[0] || defaultFlight(Date.now()),
-    [selectedDay, selectedId]
-  );
-
-  const filtered = useMemo(
-    () => selectedDay.flights.filter((flight) => `${flight.number} ${flight.destination} ${flight.agent} ${flight.time}`.toLowerCase().includes(query.trim().toLowerCase())),
-    [query, selectedDay.flights]
+  const filteredFlights = useMemo(
+    () =>
+      todayData.flights.filter((flight) =>
+        `${flight.number} ${flight.destination} ${flight.agent} ${flight.time}`
+          .toLowerCase()
+          .includes(query.trim().toLowerCase())
+      ),
+    [query, todayData.flights]
   );
 
   useEffect(() => {
-    localStorage.setItem(DATE_KEY, selectedDate);
+    localStorage.setItem(THEME_KEY, JSON.stringify(theme));
+  }, [theme]);
+
+  useEffect(() => {
+    writeLocalDays(days);
+  }, [days]);
+
+  useEffect(() => {
+    const nextDay = normalizeDay(days[selectedDate], selectedDate);
+    setDayNote(nextDay.note || '');
   }, [selectedDate]);
 
   useEffect(() => {
-    if (!user) {
-      localStorage.removeItem(USER_KEY);
-      return;
-    }
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-  }, [user]);
+    if (!user) return;
+    const payload = {
+      ...normalizeDay(days[selectedDate], selectedDate),
+      date: selectedDate,
+      note: dayNote,
+      flights: todayData.flights,
+      synced: true,
+      updatedAt: new Date().toISOString()
+    };
 
-  useEffect(() => {
-    const next = { ...(days || {}), [selectedDate]: { ...normalizeDay(days[selectedDate], selectedDate), note: dayNote } };
-    setDays((current) => ({ ...current, ...next }));
-    writeDayCache({ ...readDayCache(), ...next });
-  }, [dayNote, selectedDate]);
+    const timeout = setTimeout(async () => {
+      try {
+        const saved = await saveDay(selectedDate, payload);
+        setDays((prev) => ({ ...prev, [selectedDate]: { ...normalizeDay(saved || payload, selectedDate), synced: true } }));
+        writeLocalDays({ ...readLocalDays(), [selectedDate]: { ...normalizeDay(saved || payload, selectedDate), synced: true } });
+      } catch {
+        setDays((prev) => ({ ...prev, [selectedDate]: { ...payload, synced: false } }));
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [dayNote, selectedDate, todayData.flights, user]);
 
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY);
@@ -113,14 +150,9 @@ export default function App() {
       try {
         const profile = await getUserProfile();
         setUser(profile);
-
-        const remoteDays = await getDays();
-        if (remoteDays && typeof remoteDays === 'object') {
-          const merged = { ...readDayCache(), ...remoteDays };
-          setDays(merged);
-          writeDayCache(merged);
-        }
-
+        const remote = await getDays();
+        setDays(remote || {});
+        writeLocalDays(remote || {});
         setScreen('dashboard');
       } catch {
         localStorage.removeItem(TOKEN_KEY);
@@ -131,33 +163,6 @@ export default function App() {
 
     hydrate();
   }, []);
-
-  useEffect(() => {
-    if (!user || !selectedDate) return;
-
-    const timeout = setTimeout(async () => {
-      const payload = {
-        date: selectedDate,
-        flights: selectedDay.flights,
-        note: dayNote,
-        synced: true,
-        updatedAt: new Date().toISOString(),
-      };
-
-      try {
-        const saved = await saveDay(selectedDate, payload);
-        const merged = { ...readDayCache(), [selectedDate]: { ...normalizeDay(saved || payload, selectedDate), synced: true } };
-        setDays((current) => ({ ...current, [selectedDate]: merged[selectedDate] }));
-        writeDayCache(merged);
-      } catch {
-        const merged = { ...readDayCache(), [selectedDate]: { ...payload, synced: false } };
-        setDays((current) => ({ ...current, [selectedDate]: merged[selectedDate] }));
-        writeDayCache(merged);
-      }
-    }, 400);
-
-    return () => clearTimeout(timeout);
-  }, [selectedDate, user, selectedDay.flights, dayNote]);
 
   const notify = (message) => {
     setToast(message);
@@ -171,87 +176,100 @@ export default function App() {
 
     try {
       setLoading(true);
+      setError('');
       const result = await loginUser(email, password);
       setUser(result.user);
+
       const remoteDays = await getDays();
-      if (remoteDays && typeof remoteDays === 'object') {
-        const merged = { ...readDayCache(), ...remoteDays };
-        setDays(merged);
-        writeDayCache(merged);
-      }
+      const merged = { ...readLocalDays(), ...(remoteDays || {}) };
+      setDays(merged);
+      writeLocalDays(merged);
       setScreen('dashboard');
       notify('Login realizado');
-      setError('');
     } catch (err) {
-      setError(err.message || 'Erro ao entrar.');
+      setError(err.message || 'Falha ao entrar.');
     } finally {
       setLoading(false);
     }
   };
 
   const updateFlight = (id, field, value) => {
-    setDays((current) => {
-      const currentDayValue = normalizeDay(current[selectedDate], selectedDate);
-      const nextFlights = currentDayValue.flights.map((flight) =>
+    setDays((prev) => {
+      const current = normalizeDay(prev[selectedDate], selectedDate);
+      const nextFlights = current.flights.map((flight) =>
         flight.id === id ? { ...flight, [field]: value } : flight
       );
 
-      const nextDay = {
-        ...currentDayValue,
-        flights: nextFlights,
-        synced: false,
-        updatedAt: new Date().toISOString(),
+      const next = {
+        ...prev,
+        [selectedDate]: {
+          ...current,
+          flights: nextFlights,
+          synced: false,
+          updatedAt: new Date().toISOString()
+        }
       };
 
-      const next = { ...current, [selectedDate]: nextDay };
-      writeDayCache(next);
+      writeLocalDays(next);
       return next;
     });
   };
 
   const addFlight = () => {
-    const nextId = Date.now();
-    setDays((current) => {
-      const day = normalizeDay(current[selectedDate], selectedDate);
-      const nextDay = {
-        ...day,
-        flights: [...day.flights, defaultFlight(nextId)],
-        synced: false,
-        updatedAt: new Date().toISOString(),
+    const id = Date.now();
+    setDays((prev) => {
+      const current = normalizeDay(prev[selectedDate], selectedDate);
+      const next = {
+        ...prev,
+        [selectedDate]: {
+          ...current,
+          flights: [...current.flights, defaultFlight(id)],
+          synced: false,
+          updatedAt: new Date().toISOString()
+        }
       };
-      const next = { ...current, [selectedDate]: nextDay };
-      writeDayCache(next);
+      writeLocalDays(next);
       return next;
     });
-    setSelectedId(nextId);
+    setSelectedId(id);
     setScreen('detail');
     notify('Novo voo adicionado');
   };
 
   const removeFlight = () => {
-    setDays((current) => {
-      const day = normalizeDay(current[selectedDate], selectedDate);
-      const nextDay = {
-        ...day,
-        flights: day.flights.filter((flight) => flight.id !== selected.id),
-        synced: false,
-        updatedAt: new Date().toISOString(),
+    setDays((prev) => {
+      const current = normalizeDay(prev[selectedDate], selectedDate);
+      const next = {
+        ...prev,
+        [selectedDate]: {
+          ...current,
+          flights: current.flights.filter((flight) => flight.id !== selectedFlight.id),
+          synced: false,
+          updatedAt: new Date().toISOString()
+        }
       };
-      const next = { ...current, [selectedDate]: nextDay };
-      writeDayCache(next);
+      writeLocalDays(next);
       return next;
     });
     setScreen('dashboard');
     notify('Voo removido');
   };
 
-  const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setUser(null);
-    setScreen('login');
-    setError('');
-    notify('Sessão encerrada');
+  const handleUpload = async (event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    try {
+      for (const file of files) {
+        const uploaded = await uploadImage(file);
+        updateFlight(selectedFlight.id, 'photos', [...(selectedFlight.photos || []), { name: uploaded.name, url: uploaded.url }]);
+      }
+      notify('Foto(s) enviadas');
+    } catch (err) {
+      notify(err.message || 'Erro ao enviar imagem');
+    } finally {
+      event.target.value = '';
+    }
   };
 
   const generatePdf = () => {
@@ -266,10 +284,10 @@ export default function App() {
     doc.setFontSize(10);
     doc.text(`Data: ${new Date(`${selectedDate}T12:00:00`).toLocaleDateString('pt-BR')} | ${user?.name || 'Leandro Ferrari'}`, 14, y + 10);
 
-    selectedDay.flights.forEach((flight, index) => {
+    todayData.flights.forEach((flight, index) => {
       if (y > 250) {
         doc.addPage();
-        y = 20;
+        y = 18;
       }
       doc.setTextColor(245, 198, 72);
       doc.setFontSize(12);
@@ -278,7 +296,7 @@ export default function App() {
       doc.setFontSize(9);
       doc.text(`Horário: ${flight.time || '-'} | Agente: ${flight.agent || '-'} | Portão: ${flight.gate || '-'}`, 14, y + 26);
       doc.text(`Observação: ${flight.note || '-'}`, 14, y + 34);
-      y += 38;
+      y += 40;
     });
 
     doc.setTextColor(245, 198, 72);
@@ -289,27 +307,41 @@ export default function App() {
     notify('PDF gerado com sucesso');
   };
 
-  const historyDates = useMemo(() => Object.keys(days).sort((a, b) => b.localeCompare(a)), [days]);
+  const logout = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    setUser(null);
+    setError('');
+    setScreen('login');
+    notify('Sessão encerrada');
+  };
+
+  const dayKeys = useMemo(() => Object.keys(days).sort((a, b) => b.localeCompare(a)), [days]);
 
   if (screen === 'login') {
     return (
-      <main className="login-screen">
+      <main className="login-screen" style={{ backgroundImage: `linear-gradient(180deg, rgba(12, 22, 32, 0.55), rgba(8, 14, 24, 0.8)), url(${BRAND_IMAGE})` }}>
         <form className="login-card" onSubmit={login}>
           <div className="login-logo">✈</div>
           <h2>Diário de<br />Embarque</h2>
+
           <div className="field-login">
             <label htmlFor="email">E-mail</label>
             <input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
           </div>
+
           <div className="field-login">
             <label htmlFor="password">Senha</label>
             <input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
           </div>
+
           {error && <p className="login-error">{error}</p>}
+
           <button className="primary-btn" type="submit" disabled={loading}>
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
+
         {toast && <Toast text={toast} />}
       </main>
     );
@@ -319,11 +351,12 @@ export default function App() {
     return (
       <main className="history-screen">
         <header className="history-header">
-          <h2>DIAS REGISTRADOS</h2>
+          <h2>Dias registrados</h2>
           <button type="button" onClick={() => setScreen('dashboard')}>Voltar</button>
         </header>
+
         <div className="history-list">
-          {historyDates.map((dateKey) => {
+          {dayKeys.map((dateKey) => {
             const item = normalizeDay(days[dateKey], dateKey);
             return (
               <div key={dateKey} className="history-card">
@@ -349,74 +382,53 @@ export default function App() {
     return (
       <main className="detail-screen">
         <div className="detail-header">
-          <div className="detail-index">{String(selectedDay.flights.findIndex((flight) => flight.id === selected.id) + 1).padStart(2, '0')}</div>
+          <div className="detail-index">{String(todayData.flights.findIndex((flight) => flight.id === selectedFlight.id) + 1).padStart(2, '0')}</div>
           <div className="detail-title-wrap">
             <i className="red-dot" />
-            <strong>{selected.number || 'Voo'}</strong>
-            <small>{selected.photos.length}/10 fotos</small>
+            <strong>{selectedFlight.number || 'Voo'}</strong>
+            <small>{selectedFlight.photos.length}/10 fotos</small>
           </div>
           <button className="mini-up" type="button" onClick={() => setScreen('dashboard')}>⌃</button>
         </div>
 
         <section className="detail-panel">
-          <h2 className="section-title">DADOS DO VOO</h2>
+          <h2 className="section-title">Identificação</h2>
           <div className="field-grid two-cols">
             {[
-              ['number', 'VOO'],
-              ['destination', 'DESTINO'],
-              ['time', 'HORÁRIO'],
-              ['agent', 'AGENTE'],
-              ['gate', 'PORTÃO'],
-              ['control', 'CONTROLE'],
+              ['number', 'Voo'],
+              ['destination', 'Destino'],
+              ['time', 'Horário'],
+              ['agent', 'Agente'],
+              ['gate', 'Portão'],
+              ['control', 'Controle']
             ].map(([field, label]) => (
-              <Field
-                key={field}
-                label={label}
-                value={selected[field] || ''}
-                onChange={(value) => updateFlight(selected.id, field, value)}
-              />
+              <Field key={field} label={label} value={selectedFlight[field] || ''} onChange={(value) => updateFlight(selectedFlight.id, field, value)} />
             ))}
           </div>
 
-          <h2 className="section-title">SERVIÇOS E OBSERVAÇÕES</h2>
+          <h2 className="section-title">Serviços e observações</h2>
           <textarea
             className="detail-note"
-            value={selected.note || ''}
-            onChange={(event) => updateFlight(selected.id, 'note', event.target.value)}
+            value={selectedFlight.note || ''}
+            onChange={(event) => updateFlight(selectedFlight.id, 'note', event.target.value)}
           />
 
           <div className="actions-row">
             <label className="upload-button">
               📷 Câmera
-              <input type="file" accept="image/*" capture="environment" onChange={(event) => {
-                const files = [...event.target.files];
-                for (const file of files) {
-                  if (selected.photos.length >= 10) break;
-                  updateFlight(selected.id, 'photos', [...selected.photos, { name: file.name, url: URL.createObjectURL(file) }]);
-                }
-                event.target.value = '';
-              }} />
+              <input type="file" accept="image/*" capture="environment" onChange={handleUpload} />
             </label>
-
             <label className="upload-button secondary">
               🖼 Galeria
-              <input type="file" accept="image/*" multiple onChange={(event) => {
-                const files = [...event.target.files];
-                for (const file of files) {
-                  if (selected.photos.length >= 10) break;
-                  updateFlight(selected.id, 'photos', [...selected.photos, { name: file.name, url: URL.createObjectURL(file) }]);
-                }
-                event.target.value = '';
-              }} />
+              <input type="file" accept="image/*" multiple onChange={handleUpload} />
             </label>
-
             <button className="report-button" type="button" onClick={generatePdf}>Gerar relatório</button>
             <button className="trash-button" type="button" onClick={removeFlight}>🗑</button>
           </div>
 
-          {selected.photos.length > 0 && (
+          {selectedFlight.photos.length > 0 && (
             <div className="thumbs">
-              {selected.photos.map((photo) => (
+              {selectedFlight.photos.map((photo) => (
                 <img key={photo.url || photo.name} src={photo.url} alt={photo.name} />
               ))}
             </div>
@@ -429,21 +441,33 @@ export default function App() {
   }
 
   return (
-    <main className="dashboard-screen">
+    <main className="dashboard-screen" style={{ backgroundImage: `linear-gradient(180deg, rgba(10,18,29,0.68), rgba(8,16,27,0.9)), url(${theme.wallpaper || BRAND_IMAGE})` }}>
       <header className="topbar">
         <div className="brand-block">
-          <div className="brand-mark" style={{ backgroundImage: `url(${BRAND_IMAGE})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' }}>✈</div>
+          <div className="brand-mark">✈</div>
           <div className="brand-copy">
             <h1>DIÁRIO DE<br />EMBARQUE</h1>
-            <p>{selectedDay.flights.length} voos cadastrados</p>
+            <p>{todayData.flights.length} voos cadastrados</p>
           </div>
         </div>
 
         <div className="actions-wrap">
           <div className="actions">
-            <button type="button" className={selectedDay.synced ? 'sync-btn active' : 'sync-btn'} onClick={() => notify(selectedDay.synced ? 'Sincronizado' : 'Sincronização pendente')}>⠿</button>
-            <button type="button" onClick={() => setScreen('history')}>Histórico</button>
-            <button type="button" onClick={() => setScreen('login')}>Sair</button>
+            <button type="button" className="sync-btn active">⠿</button>
+            <div className="menu-wrap">
+              <button type="button" className="menu-toggle" onClick={() => setMenuOpen((open) => !open)}>
+                ☰
+              </button>
+              {menuOpen && (
+                <div className="menu-popup">
+                  <button type="button" onClick={() => { setCustomizeOpen(true); setMenuOpen(false); }}>Personalizar</button>
+                  <button type="button" onClick={() => notify('Chat em breve')}>Chat</button>
+                  <button type="button" onClick={() => notify('Contatos em breve')}>Contatos</button>
+                  <button type="button" onClick={() => notify('Admin em breve')}>Admin</button>
+                  <button type="button" onClick={logout}>Sair</button>
+                </div>
+              )}
+            </div>
           </div>
           <div className="user-mini">{user?.name || 'Leandro Ferrari'}</div>
         </div>
@@ -459,14 +483,16 @@ export default function App() {
         </div>
 
         <div className="meta-grid">
-          <label className="meta-label"><span>PDA</span><input value="" placeholder="-" /></label>
-          <label className="meta-label"><span>MOCHILA</span><input value="" placeholder="-" /></label>
-          <label className="meta-label"><span>RÁDIO</span><input value="" placeholder="-" /></label>
-          <label className="meta-label"><span>DWS</span><input value="" placeholder="-" /></label>
+          {['PDA', 'MOCHILA', 'RÁDIO', 'DWS'].map((field) => (
+            <label key={field} className="meta-label">
+              <span>{field}</span>
+              <input value="" placeholder="-" />
+            </label>
+          ))}
         </div>
 
         <div className="dashed-divider" />
-        <div className="section-label">VOOS DO DIA</div>
+        <div className="section-label">Voos do dia</div>
 
         <div className="search-box">
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar voo, destino ou agente" />
@@ -474,11 +500,16 @@ export default function App() {
         </div>
 
         <div className="flight-list">
-          {filtered.map((flight, index) => (
+          {filteredFlights.map((flight, index) => (
             <button className="flight-card" type="button" key={flight.id} onClick={() => { setSelectedId(flight.id); setScreen('detail'); }}>
               <div className="flight-index">{String(index + 1).padStart(2, '0')}</div>
               <div className="flight-summary">
-                <div className="flight-route"><span className="status-dot" />{flight.number || 'VOO'} <span className="arrow-route">→</span> {flight.destination || 'DESTINO'}</div>
+                <div className="flight-route">
+                  <span className="status-dot" />
+                  <strong>{flight.number || `Voo ${index + 1}`}</strong>
+                  <span className="arrow-route">→</span>
+                  <span>{flight.destination || 'Destino'}</span>
+                </div>
                 <div className="flight-meta">{flight.time || '--:--'} · Portão {flight.gate || '--'} · {flight.agent || 'Sem agente'}</div>
               </div>
               <span className="chevron-open">›</span>
@@ -493,6 +524,50 @@ export default function App() {
           <textarea value={dayNote} onChange={(event) => setDayNote(event.target.value)} placeholder="Digite uma observação..." />
         </div>
       </section>
+
+      {customizeOpen && (
+        <div className="modal-backdrop" onClick={() => setCustomizeOpen(false)}>
+          <div className="customize-panel" onClick={(event) => event.stopPropagation()}>
+            <h3>Personalizar</h3>
+            <div className="customize-section">
+              <h4>Modo de tela</h4>
+              <div className="mode-list">
+                {['auto', 'light', 'dark'].map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={theme.mode === mode ? 'mode-option active' : 'mode-option'}
+                    onClick={() => setTheme((prev) => ({ ...prev, mode }))}
+                  >
+                    {mode === 'auto' ? 'Automático' : mode === 'light' ? 'Sempre claro' : 'Sempre escuro'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="customize-section">
+              <h4>Papel de parede</h4>
+              <div className="wall-grid">
+                {['#f2c356', '#3c7ae9', '#f5e8d2', '#ffffff', '#6b1d2b', '#b9713c', '#7a4a2b', '#1ec9d9', '#6d6d6d', '#d76d5d', '#f6dfc1', '#d7ac43', '#e47a1e', '#b592d7', '#5a3f2a', '#d6b36d', '#919191', '#3d2a4a', '#2bc3a6', '#2a4f69', '#f0a3c2', '#7887ff', '#9ad36d', '#b24a58'].map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={theme.wallpaper === color ? 'wall-option active' : 'wall-option'}
+                    style={{ background: color }}
+                    onClick={() => setTheme((prev) => ({ ...prev, wallpaper: color }))}
+                    aria-label="Selecionar wallpaper"
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="customize-actions">
+              <button type="button" className="secondary-btn" onClick={() => setCustomizeOpen(false)}>Cancelar</button>
+              <button type="button" className="primary-btn small" onClick={() => { setCustomizeOpen(false); notify('Tema salvo'); }}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && <Toast text={toast} />}
     </main>

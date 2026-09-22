@@ -4,7 +4,6 @@ const apiFetch = async (endpoint, options = {}) => {
   const token = localStorage.getItem('new-wap-token');
   const response = await fetch(`${API_BASE}${endpoint}`, {
     headers: {
-      'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {})
     },
@@ -22,6 +21,9 @@ const apiFetch = async (endpoint, options = {}) => {
 export const loginUser = async (email, password) => {
   const data = await apiFetch('/login', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ email, password })
   });
 
@@ -44,7 +46,29 @@ export const getDays = async () => {
 export const saveDay = async (date, payload) => {
   const data = await apiFetch(`/days/${encodeURIComponent(date)}`, {
     method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(payload)
   });
   return data.day;
+};
+
+export const uploadImage = async (file) => {
+  const token = localStorage.getItem('new-wap-token');
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE}/upload`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || 'Upload failed');
+  }
+
+  return response.json();
 };

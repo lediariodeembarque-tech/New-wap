@@ -1,30 +1,33 @@
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+const parseResponse = async (response) => {
+  const contentType = response.headers.get('content-type') || '';
+  const body = contentType.includes('application/json') ? await response.json() : await response.text();
+
+  if (!response.ok) {
+    const message = typeof body === 'object' && body?.message ? body.message : body || `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return body;
+};
 
 const apiFetch = async (endpoint, options = {}) => {
   const token = localStorage.getItem('new-wap-token');
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {})
-    },
-    ...options
-  });
+  const headers = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers || {})
+  };
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Request failed');
-  }
-
-  return response.status === 204 ? null : response.json();
+  const response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+  return parseResponse(response);
 };
 
 export const loginUser = async (email, password) => {
   const data = await apiFetch('/login', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ email, password })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim(), password })
   });
 
   localStorage.setItem('new-wap-token', data.token);
@@ -46,9 +49,7 @@ export const getDays = async () => {
 export const saveDay = async (date, payload) => {
   const data = await apiFetch(`/days/${encodeURIComponent(date)}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
   });
   return data.day;
@@ -65,10 +66,5 @@ export const uploadImage = async (file) => {
     body: formData
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Upload failed');
-  }
-
-  return response.json();
+  return parseResponse(response);
 };

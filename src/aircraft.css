@@ -1,0 +1,16 @@
+:root { --aircraft-overlay: rgba(4, 10, 18, .78); }
+.aircraft-launcher { position: fixed; right: 18px; bottom: 18px; z-index: 50; border: 1px solid rgba(255,255,255,.16); border-radius: 12px; padding: 11px 14px; background: linear-gradient(180deg,#f4c454,#f7d879); color: #11263d; font-weight: 900; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.aircraft-modal-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 18px; background: var(--aircraft-overlay); }
+.aircraft-modal { width: min(100%, 980px); height: min(82vh,760px); display: flex; flex-direction: column; overflow: hidden; border: 1px solid rgba(255,255,255,.12); border-radius: 18px; background: #0c1622; }
+.aircraft-modal-header, .aircraft-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:rgba(18,31,43,.96); color:#edf5ff; }
+.aircraft-modal-header div { display:flex; flex-direction:column; gap:4px; }
+.aircraft-modal-header small { color:rgba(235,240,247,.7); font-size:10px; letter-spacing:.12em; }
+.aircraft-modal-header strong { color:#f2c356; font-size:1.5rem; }
+.aircraft-modal button { border:1px solid rgba(255,255,255,.14); border-radius:9px; padding:8px 12px; background:rgba(255,255,255,.06); color:#edf5ff; font-weight:700; }
+.aircraft-map { flex:1; min-height:300px; width:100%; }
+.aircraft-message, .aircraft-error { margin:0; padding:12px 18px; color:#edf5ff; background:rgba(9,18,30,.95); }
+.aircraft-error { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.aircraft-footer { color:rgba(235,240,247,.8); font-size:12px; border-top:1px solid rgba(255,255,255,.08); }
+.aircraft-marker { background:transparent; border:0; }
+.aircraft-marker span { display:grid; place-items:center; width:36px; height:36px; color:#f4c454; font-size:24px; filter:drop-shadow(0 0 8px #f4c454); }
+@media (max-width: 520px) { .aircraft-launcher { right:12px; bottom:12px; font-size:11px; } .aircraft-modal { height:88vh; } }

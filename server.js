@@ -13,7 +13,7 @@ const dataDir = path.join(__dirname, 'data');
 const uploadDir = path.join(__dirname, 'uploads');
 const storeFile = path.join(dataDir, 'store.json');
 const JWT_SECRET = process.env.JWT_SECRET || 'new-wap-demo-secret';
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 3001;
 
 fs.mkdirSync(dataDir, { recursive: true });
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -146,11 +146,21 @@ app.post('/api/upload', authRequired, (req, res) => {
       return res.status(400).json({ message: 'Nenhum arquivo recebido.' });
     }
 
-    const url = `http://localhost:${PORT}/uploads/${req.file.filename}`;
+    const baseUrl = process.env.PUBLIC_API_URL || `${req.protocol}://${req.get('host')}`;
+    const url = `${baseUrl}/uploads/${req.file.filename}`;
     return res.json({ url, name: req.file.originalname, size: req.file.size });
   });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`API running on http://localhost:${PORT}`);
+});
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`A porta ${PORT} já está em uso. Encerre o processo que a utiliza ou defina PORT para outra porta.`);
+  } else {
+    console.error('Falha ao iniciar a API:', error);
+  }
+  process.exitCode = 1;
 });

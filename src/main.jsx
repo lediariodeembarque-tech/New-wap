@@ -1,15 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import AircraftLauncher from './AircraftLauncher';
 import './styles.css';
 import './fixes.css';
-import './aircraft.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
-    <AircraftLauncher />
   </React.StrictMode>,
 );
 

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diário de Embarque - Informações do Vídeo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0b132b;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .card {
+            background-color: #1c2541;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+            border: 1px solid #3a506b;
+        }
+        h1 {
+            color: #4cc9f0;
+            text-align: center;
+            margin-top: 0;
+            font-size: 2em;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        .badge {
+            display: inline-block;
+            background-color: #480ca8;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-bottom: 20px;
+        }
+        .summary {
+            background-color: #0b132b;
+            padding: 15px;
+            border-left: 4px solid #4cc9f0;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+            border-left: 2px solid #3a506b;
+        }
+        .timeline-item {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #4cc9f0;
+            border: 2px solid #1c2541;
+        }
+        .time {
+            font-weight: bold;
+            color: #4cc9f0;
+            font-size: 0.9em;
+        }
+        .description {
+            margin-top: 5px;
+            color: #e0e1dd;
+        }
+        .text-overlay {
+            margin-top: 5px;
+            background-color: rgba(76, 201, 240, 0.1);
+            color: #4cc9f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Diário de Embarque</h1>
+    <div style="text-align: center;">
+        <span class="badge">Duração: 4.8s</span>
+        <span class="badge">Tipo: Vinheta de Abertura</span>
+    </div>
+
+    <div class="summary">
+        "Vinheta de abertura com animação 3D de um avião orbitando a Terra e revelando a marca 'Diário de Embarque'."
+    </div>
+
+    <h2>Linha do Tempo do Vídeo</h2>
+    <div class="timeline">
+        <div class="timeline-item">
+            <div class="time">00:00 - 00:01</div>
+            <div class="description">Um avião sobrevoa o planeta Terra com um raio de luz brilhante ao fundo.</div>
+        </div>
+        <div class="timeline-item">
+            <div class="time">00:01 - 00:02</div>
+            <div class="description">O avião deixa um rastro azul luminoso em órbita ao redor da Terra.</div>
+        </div>
+        <div class="timeline-item">
+            <div class="time">00:02 - 00:04</div>
+            <div class="description">O rastro luminoso circunda o centro da tela revelando a logomarca e o título.</div>
+            <div class="text-overlay">Texto em tela: DIÁRIO DE EMBARQUE</div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

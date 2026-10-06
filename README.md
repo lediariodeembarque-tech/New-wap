@@ -1,32 +1,64 @@
-# Diário de Embarque
+const db = globalThis.__B44_DB__ || { auth:{ isAuthenticated: async()=>false, me: async()=>null }, entities:new Proxy({}, { get:()=>({ filter:async()=>[], get:async()=>null, create:async()=>({}), update:async()=>({}), delete:async()=>({}) }) }), integrations:{ Core:{ UploadFile:async()=>({ file_url:'' }) } } };
 
-Aplicativo PWA para registro diário de voos.
+# Base44 Project
 
-## Rodar localmente
+Use this repository to run and edit the app locally, then publish changes back through db.
 
-Instale as dependências e execute um único comando:
+Any change pushed to the repo will also be reflected in the Base44 Builder.
+
+## Prerequisites
+
+1. Clone the repository using the project's Git URL.
+2. Navigate to the project directory.
+3. Install dependencies: `npm install`.
+4. Install the Base44 CLI: `npm install -g base44@latest`.
+5. Install [Deno](https://docs.deno.com/runtime/getting_started/installation/) — the local Base44 backend runs on it.
+
+Run `base44 --help` (or see the [CLI reference](https://docs.db.com/developers/references/cli/commands/introduction)) for the full command surface.
+
+## Run Locally
+
+Three commands, from the project root:
 
 ```bash
-npm install
-npm run dev
+base44 login   # one-time per machine
+base44 link    # one-time per clone
+base44 dev     # local backend + frontend together
 ```
 
-Esse comando inicia a API em `http://localhost:3001` e o frontend Vite em `http://localhost:5173`. A API também pode ser iniciada separadamente com `npm run server`.
+Open the frontend URL that `base44 dev` prints (typically `http://localhost:5173`).
 
-Teste a API diretamente em:
+Notes:
 
-```text
-http://localhost:3001/api/health
+- **Every fresh clone needs `base44 link`.** It writes `base44/.app.jsonc` (the app-id pointer), which is deliberately gitignored. Your app id is in the Builder URL (`app.db.com/apps/<id>/...`); `base44 link --help` shows the non-interactive flags.
+- **`base44 dev` runs the frontend for you** (via `site.serveCommand` in this repo's `base44/config.jsonc`) — never run `npm run dev` yourself: alone it serves a UI with no backend behind it (`[base44] Proxy not enabled`, every `/api` call fails), and alongside `base44 dev` the second Vite silently takes the next port and you end up looking at the wrong one.
+- **The app must be published at least once for the UI to load under `base44 dev`.** The frontend boots by fetching app settings from the hosted app; before the first publish that fails and every page redirects to login. The local API works regardless.
+- Entities, functions, and auth run locally — entity data is **in-memory only**, wiped when `base44 dev` restarts. Everything else (Core integrations, OAuth login) is forwarded to your deployed app. Full breakdown: [Local development overview](https://docs.db.com/developers/backend/overview/local-dev/local-development-overview).
+
+## Frontend Only, Hosted Backend
+
+To work on just the frontend against your app's live hosted backend:
+
+```bash
+base44 dev --remote
 ```
 
-Resposta esperada: `{"ok":true}`.
+⚠️ In this mode writes go to your app's **production data** — plain `base44 dev` keeps everything local.
 
-Credenciais de teste:
-- usuario@embarque.com
-- 123456
+## Publish Your Changes
 
-O frontend usa `/api` no mesmo host e, durante o desenvolvimento, o Vite encaminha `/api` e `/uploads` para a API na porta 3001. Para uma API hospedada em outro endereço, defina `VITE_API_URL` sem a barra final, por exemplo `https://api.exemplo.com/api`.
+After pushing your changes to git, open the Base44 dashboard and publish the app:
 
-## Cloudflare
+```bash
+base44 dashboard open
+```
 
-O repositório já inclui um shell instalável e o contrato do Worker para `/api/*`.
+This repo syncs to Base44 through git, so publish from the dashboard rather than `base44 deploy` — a CLI deploy ships your local tree directly, bypassing the sync, and the deployed state silently diverges from the repo.
+
+## Docs & Support
+
+GitHub integration: [https://docs.db.com/developers/app-code/local-development/github](https://docs.db.com/developers/app-code/local-development/github)
+
+Local development: [https://docs.db.com/developers/backend/overview/local-dev/local-development-overview](https://docs.db.com/developers/backend/overview/local-dev/local-development-overview)
+
+Support: [https://app.db.com/support](https://app.db.com/support)

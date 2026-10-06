@@ -1,0 +1,24 @@
+{
+  "name": "PresencaChat",
+  "type": "object",
+  "properties": {
+    "ultima_vez": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "ultima_vez"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

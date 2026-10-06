@@ -1,0 +1,43 @@
+{
+  "name": "MensagemChat",
+  "type": "object",
+  "properties": {
+    "texto": {
+      "type": "string"
+    },
+    "anexo_uri": {
+      "type": "string"
+    },
+    "anexo_nome": {
+      "type": "string"
+    },
+    "anexo_tipo": {
+      "type": "string"
+    },
+    "anexo_tamanho": {
+      "type": "number"
+    }
+  },
+  "required": [],
+  "rls": {
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

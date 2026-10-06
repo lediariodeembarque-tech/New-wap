@@ -1,0 +1,218 @@
+{
+  "name": "DiaEmbarque",
+  "type": "object",
+  "properties": {
+    "data": {
+      "type": "string",
+      "format": "date"
+    },
+    "pda": {
+      "type": "string"
+    },
+    "mochila": {
+      "type": "string"
+    },
+    "radio": {
+      "type": "string"
+    },
+    "dws": {
+      "type": "string"
+    },
+    "itinerario": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "voo": {
+            "type": "string"
+          },
+          "destino": {
+            "type": "string"
+          },
+          "horario": {
+            "type": "string"
+          },
+          "agente": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "observacoes": {
+      "type": "string"
+    },
+    "voos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "voo": {
+            "type": "string"
+          },
+          "destino": {
+            "type": "string"
+          },
+          "horario": {
+            "type": "string"
+          },
+          "controle": {
+            "type": "string"
+          },
+          "ramal": {
+            "type": "string"
+          },
+          "prefixo": {
+            "type": "string"
+          },
+          "posicao": {
+            "type": "string"
+          },
+          "meta": {
+            "type": "string"
+          },
+          "agentes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nome": {
+                  "type": "string"
+                },
+                "agente": {
+                  "type": "string"
+                },
+                "horarioPortao": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "bagsRetidas": {
+            "type": "string"
+          },
+          "tripPortao": {
+            "type": "string"
+          },
+          "saida": {
+            "type": "string"
+          },
+          "trip": {
+            "type": "string"
+          },
+          "reserva": {
+            "type": "string"
+          },
+          "inicioEmbarque": {
+            "type": "string"
+          },
+          "liberado": {
+            "type": "string"
+          },
+          "terminoEmbarque": {
+            "type": "string"
+          },
+          "faltantes": {
+            "type": "string"
+          },
+          "comBags": {
+            "type": "string"
+          },
+          "ultimosPax": {
+            "type": "string"
+          },
+          "horaUltimosPax": {
+            "type": "string"
+          },
+          "total": {
+            "type": "string"
+          },
+          "porta": {
+            "type": "string"
+          },
+          "horaPorta": {
+            "type": "string"
+          },
+          "delta1": {
+            "type": "string"
+          },
+          "delta2": {
+            "type": "string"
+          },
+          "delta3": {
+            "type": "string"
+          },
+          "delta4": {
+            "type": "string"
+          },
+          "van": {
+            "type": "string"
+          },
+          "codigoAtraso": {
+            "type": "string"
+          },
+          "motivosAtraso": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "motivosAtrasoObs": {
+            "type": "string"
+          },
+          "servicos": {
+            "type": "string"
+          },
+          "observacoes": {
+            "type": "string"
+          },
+          "fotos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "src": {
+                  "type": "string"
+                },
+                "quando": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "data"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
